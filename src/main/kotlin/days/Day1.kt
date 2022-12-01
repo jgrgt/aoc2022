@@ -3,15 +3,32 @@ package days
 class Day1 : Day(1) {
 
     override fun partOne(): Any {
-        return inputList.take(2)
-            .map { it.uppercase() }
-            .joinToString(" ")
+        // reduce -> if empty add 0 / if not empty add to last item
+        return inputList
+            .map { it.trim().toIntOrNull() }
+            .fold(mutableListOf(0)) { l, i ->
+                if (i == null) {
+                    l.add(0, 0)
+                } else {
+                    l[0] += i
+                }
+                l
+            }.max()
+
     }
 
     override fun partTwo(): Any {
-        return inputString.split("\n")
-            .filterNot { it.isEmpty() }
-            .map { it.uppercase() }
-            .last()
+        val weights = inputList
+            .map { it.trim().toIntOrNull() }
+            .fold(mutableListOf(0)) { l, i ->
+                if (i == null) {
+                    l.add(0, 0)
+                } else {
+                    l[0] += i
+                }
+                l
+            }
+        weights.sortDescending()
+        return weights.take(3).sum()
     }
 }
