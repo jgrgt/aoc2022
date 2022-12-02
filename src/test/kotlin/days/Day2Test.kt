@@ -20,7 +20,7 @@ internal class Day2Test {
 
     @Test
     fun `a game should draw correctly`() {
-        val game = Game(Hand.PAPER, Hand.PAPER)
+        val game = Game1(Hand.PAPER, Hand.PAPER)
         val actual = game.score()
         assertEquals(2 + 3, actual)
     }
