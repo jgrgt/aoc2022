@@ -20,7 +20,24 @@ class Day4 : Day(4) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        return inputList
+            .map { line ->
+                val (firstRangeString, secondRangeString) = line.split(",")
+                val firstRange = toRange(firstRangeString)
+                val secondRange = toRange(secondRangeString)
+                if (firstRange.hasOverlap(secondRange)) {
+                    1
+                } else {
+                    0
+                }
+            }.sum()
+    }
+}
+
+private fun IntRange.hasOverlap(secondRange: IntRange): Boolean {
+    // N^2 complexity, but let's try it
+    return this.any { firstRangeElement ->
+        secondRange.contains(firstRangeElement)
     }
 }
 
