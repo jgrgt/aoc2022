@@ -15,7 +15,14 @@ class Day5 : Day(5) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        val stackInput = inputList.subList(0, 8)
+        check(stackInput[7].startsWith("[")) { "probably wrong stack" }
+        val game = Day5Game.fromStackInput(stackInput)
+        inputList.drop(10).forEach { line ->
+            val move = Move.parse(line)
+            game.execute2(move)
+        }
+        return game.topCrates().joinToString("")
     }
 }
 
@@ -42,6 +49,17 @@ class Day5Game(private val stacks: List<Stack>) {
             val v = fromStack.removeLast()
             toStack.add(v)
         }
+    }
+
+    fun execute2(move: Move) {
+        val fromStack = stacks[move.fromIndex - 1]
+        val toStack = stacks[move.toIndex - 1]
+        val moved = mutableListOf<Char>()
+        repeat(move.amount) {
+            val v = fromStack.removeLast()
+            moved.add(v)
+        }
+        toStack.addAll(moved.reversed())
     }
 
     fun topCrates(): List<Char> {
