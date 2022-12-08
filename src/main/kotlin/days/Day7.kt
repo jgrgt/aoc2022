@@ -21,7 +21,21 @@ class Day7 : Day(7) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        val root = Dir("root", null)
+        val system = Day7System(root)
+        inputList.drop(1) // skip root
+            .forEach { l ->
+                if (Day7Util.isCommand(l)) {
+                    val cmd = Day7Util.parseCommand(l)
+                    system.execute(cmd)
+                } else {
+                    system.pwd.registerDirectoryContents(l)
+                }
+            }
+        // now we have the file system...
+        val visitor = Part2Visitor()
+        root.accept(visitor)
+        return visitor.smallest!!.size()
     }
 }
 
@@ -70,6 +84,21 @@ class Day7System(root: Dir) {
 interface Day7Visitor {
     fun dir(d : Dir)
     fun file(f: File)
+}
+
+class Part2Visitor : Day7Visitor {
+    private val neededBytes = 8381165
+    var smallest: Dir? = null
+    override fun dir(d: Dir) {
+        val s = smallest
+        // single thread here, so no danger
+        if (d.size() >= neededBytes && (s == null || s.size() > d.size())) {
+            smallest = d
+        }
+    }
+
+    override fun file(f: File) {
+    }
 }
 
 class Part1Visitor() : Day7Visitor {
