@@ -76,7 +76,7 @@ class Part1Visitor() : Day7Visitor {
     var total = 0
     override fun dir(d: Dir) {
         val size = d.size()
-        if (size <= 10000) {
+        if (size <= 100000) {
             total += size
         }
     }
@@ -90,7 +90,7 @@ sealed class Day7Node(open val name: String) {
     abstract fun accept(v: Day7Visitor)
 }
 
-data class Dir(override val name: String, val parent: Dir?, val children: MutableList<Day7Node> = mutableListOf()) :
+class Dir(override val name: String, val parent: Dir?, val children: MutableList<Day7Node> = mutableListOf()) :
     Day7Node(name) {
     fun registerDirectoryContents(l: String) {
         if (l.startsWith("dir ")) {
@@ -139,14 +139,21 @@ data class Dir(override val name: String, val parent: Dir?, val children: Mutabl
         }
         v.dir(this)
     }
+    override fun toString(): String {
+        return "Dir(name='$name', parent=$parent, ${children.size} children)"
+    }
 }
 
-data class File(override val name: String, val size: Int) : Day7Node(name) {
+class File(override val name: String, val size: Int) : Day7Node(name) {
     override fun size(): Int {
         return size
     }
 
     override fun accept(v: Day7Visitor) {
         v.file(this)
+    }
+
+    override fun toString(): String {
+        return "File(name='$name', size=$size)"
     }
 }
