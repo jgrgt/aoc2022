@@ -15,7 +15,9 @@ class Day7 : Day(7) {
                 }
             }
         // now we have the file system...
-        return 0
+        val visitor = Part1Visitor()
+        root.accept(visitor)
+        return visitor.total
     }
 
     override fun partTwo(): Any {
@@ -65,12 +67,34 @@ class Day7System(root: Dir) {
     var pwd = root
 }
 
-sealed class Day7Node(open val name: String)
+interface Day7Visitor {
+    fun dir(d : Dir)
+    fun file(f: File)
+}
+
+class Part1Visitor() : Day7Visitor {
+    var total = 0
+    override fun dir(d: Dir) {
+        val size = d.size()
+        if (size <= 10000) {
+            total += size
+        }
+    }
+
+    override fun file(f: File) {
+    }
+}
+
+sealed class Day7Node(open val name: String) {
+    abstract fun size(): Int
+    abstract fun accept(v: Day7Visitor)
+}
+
 data class Dir(override val name: String, val parent: Dir?, val children: MutableList<Day7Node> = mutableListOf()) :
     Day7Node(name) {
     fun registerDirectoryContents(l: String) {
-        if (l.startsWith("dir")) {
-            addChildDir(l.trim().split(" ")[2].trim())
+        if (l.startsWith("dir ")) {
+            addChildDir(l.trim().split(" ")[1].trim())
         } else {
             val (sizeString, name) = l.trim().split(" ")
             addChildFile(name, sizeString.toInt())
@@ -103,6 +127,26 @@ data class Dir(override val name: String, val parent: Dir?, val children: Mutabl
     fun parent(): Dir {
         return parent!!
     }
+
+    override fun size(): Int {
+        return children.sumOf { it.size() }
+    }
+
+    override fun accept(v: Day7Visitor) {
+        // depth first visit
+        children.forEach { c ->
+            c.accept(v)
+        }
+        v.dir(this)
+    }
 }
 
-data class File(override val name: String, val size: Int) : Day7Node(name)
+data class File(override val name: String, val size: Int) : Day7Node(name) {
+    override fun size(): Int {
+        return size
+    }
+
+    override fun accept(v: Day7Visitor) {
+        v.file(this)
+    }
+}
