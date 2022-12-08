@@ -8,7 +8,7 @@ class Day6 : Day(6) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        return Day6Util.findMarker2(inputString)
     }
 }
 
@@ -27,6 +27,21 @@ object Day6Util {
             m1 = m2
             m2 = m3
             m3 = c
+        }
+
+        throw IllegalArgumentException("No marker found in $s")
+    }
+
+    fun findMarker2(s: String): Int {
+        check(s.length >= 14) { throw IllegalArgumentException("String too short!") }
+        val markers = s.take(13).toMutableList()
+
+        s.drop(13).forEachIndexed { i, c ->
+            markers.add(c)
+            if (markers.toSet().size == 14) {
+                return i + 14
+            }
+            markers.removeAt(0)
         }
 
         throw IllegalArgumentException("No marker found in $s")
