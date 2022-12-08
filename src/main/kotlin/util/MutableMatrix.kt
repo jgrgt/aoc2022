@@ -224,6 +224,27 @@ data class MutableMatrix<T>(
             row.joinToString { it.toString() }
         }.joinToString("\n")
     }
+
+    fun valuesList(p: Point, modifier: (Point) -> Point): List<T> {
+        val values = mutableListOf<T>()
+        var x = p
+        var safety = 0
+        val max = this.items.size
+        while (isNotOnEdge(x)) {
+            if (safety >= max) {
+                break
+            }
+
+            x = modifier.invoke(x)
+            values.add(get(x))
+            safety += 1
+        }
+
+        if (safety >= max) {
+            throw IllegalStateException("The safety tripped!")
+        }
+        return values
+    }
 }
 
 data class Point(val x: Int, val y: Int) {
