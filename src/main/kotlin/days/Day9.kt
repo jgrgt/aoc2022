@@ -14,7 +14,12 @@ class Day9 : Day(9) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        val game = Day9Game2()
+        inputList.forEach { l ->
+            val move = Day9Move.parse(l)
+            game.move(move)
+        }
+        return game.tailPositions.size
     }
 }
 
@@ -137,5 +142,131 @@ class Day9Game() {
                 throw IllegalStateException("Unexpected head/tail position: $head $tail")
             }
         }
+    }
+}
+
+class Day9Game2() {
+    // rope has length 10
+    val rope = MutableList(10) { _ -> Point(0, 0) }
+    var tailPositions = mutableSetOf(rope.last())
+
+    fun move(move: Day9Move) {
+        repeat(move.steps) {
+            moveSingle(move.direction)
+        }
+    }
+
+    private fun moveSingle(direction: Direction) {
+        val head = rope[0]
+        rope[0] = when (direction) {
+            Direction.UP -> head.up()
+            Direction.DOWN -> head.down()
+            Direction.LEFT -> head.left()
+            Direction.RIGHT -> head.right()
+        }
+        adjustTails()
+        logTail()
+    }
+
+    private fun adjustTails() {
+        (1..9).forEach { i ->
+            adjustTail(i)
+        }
+    }
+
+    private fun logTail() {
+        tailPositions.add(rope.last())
+    }
+
+    private fun adjustTail(i: Int) {
+        val head = rope[i-1]
+        var tail = rope[i]
+        when (head - tail) {
+            //     2  3  4
+            // 16           6
+            // 15     X     7
+            // 14           8
+            //    12 11 10
+            Point(0, 0) -> {}// do nothing
+            Point(1, 0) -> {}
+            Point(0, 1) -> {}
+            Point(-1, 0) -> {}
+            Point(0, -1) -> {}
+            Point(1, 1) -> {}
+            Point(-1, 1) -> {}
+            Point(1, -1) -> {}
+            Point(-1, -1) -> {}
+
+            // New ones
+            Point(2, -2) -> {
+                tail += Point(1, -1)
+            }
+            Point(-2, -2) -> {
+                tail += Point(-1, -1)
+            }
+            Point(-2, 2) -> {
+                tail += Point(-1, 1)
+            }
+            Point(2, 2) -> {
+                tail += Point(1, 1)
+            }
+
+            // Down
+            Point(2, -1) -> {
+                tail += Point(1, -1)
+            }
+
+            Point(2, 0) -> {
+                tail = tail.down() // x + 1
+            }
+
+            Point(2, 1) -> {
+                tail += Point(1, 1)
+            }
+
+            // Up
+            Point(-2, -1) -> {
+                tail += Point(-1, -1)
+            }
+
+            Point(-2, 0) -> {
+                tail = tail.up() // x - 1
+            }
+
+            Point(-2, 1) -> {
+                tail += Point(-1, 1)
+            }
+
+            // Right
+            Point(-1, 2) -> {
+                tail += Point(-1, 1)
+            }
+
+            Point(0, 2) -> {
+                tail = tail.right() // y + 1
+            }
+
+            Point(1, 2) -> {
+                tail += Point(1, 1)
+            }
+
+            // Left
+            Point(-1, -2) -> {
+                tail += Point(-1, -1)
+            }
+
+            Point(0, -2) -> {
+                tail = tail.left() // y - 1
+            }
+
+            Point(1, -2) -> {
+                tail += Point(1, -1)
+            }
+
+            else -> {
+                throw IllegalStateException("Unexpected head/tail position: $head $tail")
+            }
+        }
+        rope[i] = tail
     }
 }
