@@ -1,5 +1,8 @@
 package days
 
+import util.MutableMatrix
+import util.Point
+
 class Day10 : Day(10) {
 
     override fun partOne(): Any {
@@ -20,8 +23,47 @@ class Day10 : Day(10) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        val instructions = inputList.map {
+            Day10Instruction.parse(it)
+        }
+        val system = Day10System(instructions)
+        system.run()
+        print(system.screen.pixels.printSep("") {
+            false
+        })
+        return system.screen.pixels.toString()
     }
+}
+
+class Day10System(instructions: List<Day10Instruction>) {
+    val game = Day10Game(instructions)
+    val screen = Day10Screen()
+
+    fun run() {
+        repeat(40 * 6) { n ->
+            game.tick()
+            screen.draw(n, game.x)
+        }
+    }
+}
+
+class Day10Screen() {
+    fun draw(pixelIndex: Int, overlayIndex: Int) {
+        val row = pixelIndex / 40
+        val column = pixelIndex - row * 40
+        val toDraw = if (column == overlayIndex -1 || column == overlayIndex || column == overlayIndex + 1) {
+            '#'
+        } else {
+            '.'
+        }
+        pixels.set(Point(row, column), toDraw)
+    }
+
+    val pixels = MutableMatrix(
+        MutableList(6) {
+            MutableList(40) { '?'}
+        }
+    )
 }
 
 sealed class Day10Instruction {
