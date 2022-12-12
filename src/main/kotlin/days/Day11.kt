@@ -1,16 +1,17 @@
 package days
 
+import java.lang.IllegalStateException
 import kotlin.math.sqrt
 
 class Day11 : Day(11) {
 
     override fun partOne(): Any {
-        return 0
-//        val monkeys = inputList.windowed(7, 7, true)
-//            .map { monkeyLines -> Day11Monkey.parse(monkeyLines) }
-//        val game = Day11Game(monkeys)
-//        repeat(20) { game.round() }
-//        return game.monkeys.map { it.itemsInspected }.sortedDescending().take(2).reduce { x, y -> x * y }
+//        return 0
+        val monkeys = inputList.windowed(7, 7, true)
+            .map { monkeyLines -> Day11Monkey.parse(monkeyLines) }
+        val game = Day11Game(monkeys)
+        repeat(20) { game.round() }
+        return game.monkeys.map { it.itemsInspected }.sortedDescending().take(2).reduce { x, y -> x * y }
     }
 
     override fun partTwo(): Any {
@@ -86,89 +87,61 @@ sealed interface Day11Number {
     fun isDivisibleBy(divTest: Int): Boolean
 }
 
-class FactorialNumber(val factors: List<Int>) : Day11Number {
+class SimpleFactorialNumber(
+    val moduli: Map<Int, Int>
+) : Day11Number {
+
     companion object {
-        fun from(i: Int): FactorialNumber {
-            val factors = primeFactors(i)
-            return FactorialNumber(factors)
+        val primes = listOf(2, 3, 5, 7, 11, 13, 17, 19)
+
+        fun from(i: Int): SimpleFactorialNumber {
+//            val factors = primeFactors(i)
+            return SimpleFactorialNumber(
+                primes.associateWith { prime ->
+                    i % prime
+                }
+            )
         }
     }
 
     override fun times(i: Day11Number): Day11Number {
-        return when (i) {
-            is FactorialNumber -> FactorialNumber(this.factors + i.factors)
-            else -> throw IllegalArgumentException("Unexpected multiply with other factorial?")
-        }
+        // ((ax + m) * (ax + m) % a)
+        // == (ax * ax + 2 * ax * m + m * m) % a == (m * m) % a
+        val newModuli = moduli.map { (prime, modulo) ->
+            prime to ((modulo * modulo) % prime)
+        }.toMap()
+        return SimpleFactorialNumber(
+            newModuli
+        )
     }
 
     override fun times(i: Int): Day11Number {
-        // assuming i is prime
-        check(i == 19 || i == 11) { throw IllegalArgumentException("Unexpected multiply by $i") }
-        return FactorialNumber(this.factors + i)
+        // ((ax + m) * i) % a == (axi + mi) % a == mi % a
+        val newModuli = moduli.map { (prime, modulo) ->
+            prime to ((modulo * i) % prime)
+        }.toMap()
+        return SimpleFactorialNumber(
+            newModuli
+        )
     }
 
     override fun plus(i: Day11Number): Day11Number {
-        return AddedFactorialNumbers(listOf(this, i))
+        // added to itself - does not happen in puzzle input?
+        throw IllegalStateException()
+
     }
 
     override fun plus(i: Int): Day11Number {
-        return AddedFactorialNumbers(listOf(this, from(i)))
+        val newModuli = moduli.map { (prime, modulo) ->
+            prime to ((modulo + i) % prime)
+        }.toMap()
+        return SimpleFactorialNumber(
+            newModuli
+        )
     }
 
     override fun isDivisibleBy(divTest: Int): Boolean {
-        // assuming divTest is prime here
-        return factors.contains(divTest)
-    }
-}
-
-class MultipliedFactorialNumbers(val factorials: List<Day11Number>) : Day11Number {
-    override fun times(i: Day11Number): Day11Number {
-        return when (i) {
-            is MultipliedFactorialNumbers -> MultipliedFactorialNumbers(factorials + i)
-            else -> throw IllegalArgumentException("Unknown multiply")
-        }
-    }
-
-    override fun times(i: Int): Day11Number {
-        return MultipliedFactorialNumbers(factorials + FactorialNumber.from(i))
-    }
-
-    override fun plus(i: Day11Number): Day11Number {
-        return AddedFactorialNumbers(listOf(this, i))
-    }
-
-    override fun plus(i: Int): Day11Number {
-        return AddedFactorialNumbers(listOf(this, FactorialNumber.from(i)))
-    }
-
-    override fun isDivisibleBy(divTest: Int): Boolean {
-        return factorials.any { it.isDivisibleBy(divTest) }
-    }
-
-}
-
-class AddedFactorialNumbers(val factorials: List<Day11Number>) : Day11Number {
-    override fun times(i: Day11Number): Day11Number {
-        return when (i) {
-            is AddedFactorialNumbers -> MultipliedFactorialNumbers(listOf(this, i))
-            else -> throw IllegalArgumentException("Unexpected multiply with other factorial?")
-        }
-    }
-
-    override fun times(i: Int): Day11Number {
-        return AddedFactorialNumbers(factorials.map { f -> f.times(i) })
-    }
-
-    override fun plus(i: Day11Number): Day11Number {
-        return AddedFactorialNumbers(factorials + i)
-    }
-
-    override fun plus(i: Int): Day11Number {
-        return AddedFactorialNumbers(factorials + FactorialNumber.from(i))
-    }
-
-    override fun isDivisibleBy(divTest: Int): Boolean {
-        return factorials.all { it.isDivisibleBy(divTest) }
+        return moduli[divTest]!! == 0
     }
 }
 
@@ -189,7 +162,8 @@ data class Day11Monkey(
         fun parse(lines: List<String>): Day11Monkey {
             check(lines[0].startsWith("Monkey ")) { "Unexpected input lines" }
 //            check(lines[6].trim().isEmpty()) { "Unexpected end line" }
-            val items = lines[1].trim().split(":")[1].trim().split(",").map { FactorialNumber.from(it.trim().toInt()) }
+            val items =
+                lines[1].trim().split(":")[1].trim().split(",").map { SimpleFactorialNumber.from(it.trim().toInt()) }
             val operator = lines[2][23]
             val amountString = lines[2].substring(25)
             val operation = when (operator) {
