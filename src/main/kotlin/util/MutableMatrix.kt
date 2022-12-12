@@ -245,6 +245,12 @@ data class MutableMatrix<T>(
         }
         return values
     }
+
+    fun find(t: T): Point {
+        val x = items.indexOfFirst { row -> row.contains(t) }
+        val y = items[x].indexOf(t)
+        return Point(x, y)
+    }
 }
 
 data class Point(val x: Int, val y: Int) {
