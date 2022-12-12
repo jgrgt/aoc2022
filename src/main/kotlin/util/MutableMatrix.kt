@@ -251,6 +251,18 @@ data class MutableMatrix<T>(
         val y = items[x].indexOf(t)
         return Point(x, y)
     }
+
+    fun findAll(t: T): List<Point> {
+        return items.flatMapIndexed { x, row ->
+            row.mapIndexedNotNull { y, item ->
+                if (item == t) {
+                    Point(x, y)
+                } else {
+                    null
+                }
+            }
+        }
+    }
 }
 
 data class Point(val x: Int, val y: Int) {

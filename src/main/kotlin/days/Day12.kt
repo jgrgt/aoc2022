@@ -16,9 +16,25 @@ class Day12 : Day(12) {
     }
 
     override fun partTwo(): Any {
-        return "TODO"
+        val heights = MutableMatrix.fromSingleDigits(inputList) { c ->
+            c
+        }
+        val oldStart = heights.find('S')
+        heights.set(oldStart, 'a')
+        val allLowest = heights.findAll('a')
+        val lengths = allLowest.map { newStart ->
+            heights.set(newStart, 'S')
+            val shortestPath = heights.map { _ -> heights.height() * heights.width() }
+            val game = Day12Game(heights, shortestPath)
+            game.run()
+            // clean up
+            heights.set(newStart, 'a')
+            game.shortestPath()
+        }
+        return lengths.min()
     }
 }
+
 
 class Day12Game(val heights: MutableMatrix<Char>, val shortestPath: MutableMatrix<Int>) {
     val start = 'S'
@@ -26,7 +42,7 @@ class Day12Game(val heights: MutableMatrix<Char>, val shortestPath: MutableMatri
     val heighest = 'z'
     val lowest = 'a'
 
-    fun propagate(start: Point) : List<Point> {
+    fun propagate(start: Point): List<Point> {
         val here = heights.get(start)
         val currentPathLength = shortestPath.get(start)
         val moves = start.cross()
@@ -44,18 +60,21 @@ class Day12Game(val heights: MutableMatrix<Char>, val shortestPath: MutableMatri
             }
             h != null && h <= nextHeight
         }
-        validMoves.forEach { move ->
+        return validMoves.mapNotNull { move ->
             val currentBestPathLengthForMove = shortestPath.get(move)
             if (nextPathLength < currentBestPathLengthForMove) {
                 shortestPath.set(move, nextPathLength)
+                move
+            } else {
+                null
             }
         }
         // Go deeper
-        return validMoves
+//        return validMoves
     }
 
     fun run() {
-        val start = heights.find('S')
+        val start = heights.find(start)
         shortestPath.set(start, 0)
         run(start)
     }
@@ -67,7 +86,7 @@ class Day12Game(val heights: MutableMatrix<Char>, val shortestPath: MutableMatri
         while (candidates.isNotEmpty() && i < safety) {
             i++
 
-            val newCandidates = candidates.flatMap {candidate ->
+            val newCandidates = candidates.flatMap { candidate ->
                 propagate(candidate)
             }
             candidates.clear()
@@ -77,7 +96,7 @@ class Day12Game(val heights: MutableMatrix<Char>, val shortestPath: MutableMatri
 
     private fun nextHeight(here: Char): Char {
         if (here == start) {
-            return lowest
+            return lowest + 1
         } else if (here == heighest) {
             // this will break for 'E' :(
             return heighest
