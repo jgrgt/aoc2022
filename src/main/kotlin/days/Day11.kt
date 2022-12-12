@@ -19,7 +19,8 @@ class Day11 : Day(11) {
             .map { monkeyLines -> Day11Monkey.parse(monkeyLines) }
         val game = Day11Game(monkeys)
         repeat(10000) { game.round() }
-        return game.monkeys.map { it.itemsInspected }.sortedDescending().take(2).reduce { x, y -> x * y }
+        val parts = game.monkeys.map { it.itemsInspected }.sortedDescending().take(2)
+        return parts[0].toLong() * parts[1].toLong()
     }
 }
 
@@ -88,15 +89,17 @@ sealed interface Day11Number {
 }
 
 class SimpleFactorialNumber(
+//    val number: Int,
     val moduli: Map<Int, Int>
 ) : Day11Number {
 
     companion object {
-        val primes = listOf(2, 3, 5, 7, 11, 13, 17, 19)
+        val primes = listOf(2, 3, 5, 7, 11, 13, 17, 19, 23)
 
         fun from(i: Int): SimpleFactorialNumber {
 //            val factors = primeFactors(i)
             return SimpleFactorialNumber(
+//                i,
                 primes.associateWith { prime ->
                     i % prime
                 }
@@ -110,9 +113,14 @@ class SimpleFactorialNumber(
         val newModuli = moduli.map { (prime, modulo) ->
             prime to ((modulo * modulo) % prime)
         }.toMap()
-        return SimpleFactorialNumber(
-            newModuli
-        )
+        return when (i) {
+            is SimpleFactorialNumber -> {
+                SimpleFactorialNumber(
+//                    this.number * i.number,
+                    newModuli
+                )
+            }
+        }
     }
 
     override fun times(i: Int): Day11Number {
@@ -121,6 +129,7 @@ class SimpleFactorialNumber(
             prime to ((modulo * i) % prime)
         }.toMap()
         return SimpleFactorialNumber(
+//            number * i,
             newModuli
         )
     }
@@ -136,12 +145,18 @@ class SimpleFactorialNumber(
             prime to ((modulo + i) % prime)
         }.toMap()
         return SimpleFactorialNumber(
+//            number + i,
             newModuli
         )
     }
 
     override fun isDivisibleBy(divTest: Int): Boolean {
-        return moduli[divTest]!! == 0
+//        val numberModulo = number % divTest
+        val fastModulo = moduli[divTest]!!
+//        if (numberModulo != fastModulo) {
+//            throw IllegalStateException()
+//        }
+        return fastModulo == 0
     }
 }
 
