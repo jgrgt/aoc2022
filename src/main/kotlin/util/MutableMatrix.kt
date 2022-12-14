@@ -1,5 +1,8 @@
 package util
 
+import kotlin.math.max
+import kotlin.math.min
+
 data class MutableMatrix<T>(
     val items: MutableList<MutableList<T>>
 ) {
@@ -23,6 +26,15 @@ data class MutableMatrix<T>(
                     items.toMutableList()
                 }.toMutableList()
             )
+        }
+
+        fun <T> from(height: Int, width: Int, initFunc: (p: Point) -> T): MutableMatrix<T> {
+            val items = (0.until(height)).map { x ->
+                (0.until(width)).map { y ->
+                    initFunc(Point(x, y))
+                }.toMutableList()
+            }.toMutableList()
+            return MutableMatrix(items)
         }
     }
 
@@ -263,6 +275,18 @@ data class MutableMatrix<T>(
             }
         }
     }
+
+    fun transpose(): MutableMatrix<T> {
+        val newHeight = width()
+        val newWidth = height()
+        return from(newHeight, newWidth) { p -> get(Point(p.y, p.x))}
+    }
+
+    fun dropX(amountOfXToDrop: Int) {
+        repeat(amountOfXToDrop) {
+            items.removeFirst()
+        }
+    }
 }
 
 data class Point(val x: Int, val y: Int) {
@@ -306,5 +330,21 @@ data class Point(val x: Int, val y: Int) {
 
     operator fun minus(tail: Point): Point {
         return Point(x - tail.x, y - tail.y)
+    }
+}
+
+data class Line(val from: Point, val to: Point) {
+    init {
+        check(from.x == to.x || from.y == to.y) { "Only horizontal or vertical lines supported!" }
+    }
+
+    fun points(): List<Point> {
+        return if (from.x == to.x) {
+            (min(from.y, to.y)..max(from.y, to.y)).map { Point(from.x, it) }
+        } else if (from.y == to.y) {
+            (min(from.x, to.x)..max(from.x, to.x)).map { Point(it, from.y) }
+        } else {
+            throw IllegalStateException("Only horizontal or vertical lines supported!")
+        }
     }
 }
