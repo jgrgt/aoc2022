@@ -12,4 +12,12 @@ class Day14Test {
         ).play()
         assertEquals(actual, 24)
     }
+    @Test
+    fun example2() {
+        val actual = Day14Game2(
+            """498,4 -> 498,6 -> 496,6
+503,4 -> 502,4 -> 502,9 -> 494,9""".lines()
+        ).play()
+        assertEquals(actual, 93)
+    }
 }
