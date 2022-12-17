@@ -122,7 +122,7 @@ data class MutableMatrix<T>(
         return !(point.x < 0 || point.y < 0 || point.x >= items.size || point.y >= items[0].size)
     }
 
-    fun printSep(sep: String, hightlight: (Point) -> Boolean) {
+    fun printSep(sep: String, hightlight: (Point) -> Boolean = { false }) {
         // Everything after this is in red
         val red = "\u001b[31m"
 
@@ -281,7 +281,7 @@ data class MutableMatrix<T>(
     fun transpose(): MutableMatrix<T> {
         val newHeight = width()
         val newWidth = height()
-        return from(newHeight, newWidth) { p -> get(Point(p.y, p.x))}
+        return from(newHeight, newWidth) { p -> get(Point(p.y, p.x)) }
     }
 
     fun dropX(amountOfXToDrop: Int) {

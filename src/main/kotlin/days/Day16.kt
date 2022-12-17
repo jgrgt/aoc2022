@@ -1,10 +1,12 @@
 package days
 
-class Day16 : Day(1) {
+import util.MutableMatrix
+import util.Point
+
+class Day16 : Day(16) {
 
     override fun partOne(): Any {
-        return "TODO"
-
+        return Game16(inputList).solve(null)
     }
 
     override fun partTwo(): Any {
@@ -54,33 +56,114 @@ data class D16Attempt(val clock: Int, val position: String, val openings: Map<St
 class Game16(lines: List<String>) {
     val valves = lines.map { Day16Valve.from(it) }.associateBy { it.name }
 
-    fun solve(): Int {
-        var paths = listOf(D16Attempt(0, "AA", emptyMap()))
+    fun solve(valveNameOrder: List<String>?): Int {
+        // Plan: first figure out the most efficient ways to go from 1 (useful) valve to another.
+        // Then use that to iterate all efficient possibilities and find the best one
 
-        repeat(30) { zeroMinute ->
-            paths = paths.flatMap { attempt ->
-                val valve = valves[attempt.position]!!
-                val next = valve.next
-                // we could open the current valve, if unopened or we could go to the next valve
-                // just go to next
-                val goToNextAttempts = next.map { attempt.goto(it) }
-                // open this valve
-                val openValveAttempts = if (attempt.currentValveIsOpen()) {
-                    emptyList()
-                } else if (valve.flowRate == 0) {
-                    emptyList()
-                } else {
-                    listOf(attempt.open(valves))
+        // First part: pathfinding, depth first, no loops
+        val valvesWithRatesAndStartValve = valves.filter { it.value.flowRate > 0 || it.key == "AA" }
+        val valvesWithRatesAndStartValueNames =
+            valvesWithRatesAndStartValve.keys.toList().sorted() // sorted because easier for me
+        val pathLengths = MutableMatrix.from(valvesWithRatesAndStartValve.size, valvesWithRatesAndStartValve.size) { 0 }
+        // iterate all combinations
+        valvesWithRatesAndStartValueNames.forEachIndexed { indexFrom, valveNameFrom ->
+            valvesWithRatesAndStartValueNames.forEachIndexed { indexTo, valveNameTo ->
+                if (indexFrom < indexTo) {
+                    check(valveNameFrom != valveNameTo)
+                    val p = Point(indexFrom, indexTo)
+                    val current = pathLengths.get(p)
+                    check(current == 0)
+                    val length = findShortestLength(valveNameFrom, valveNameTo)
+                    pathLengths.set(p, length)
+                    pathLengths.set(Point(indexTo, indexFrom), length)
                 }
-                val allNextAttempts = goToNextAttempts + openValveAttempts
-                // Filter out any attempts with a max possible score lower than any current total score...
-                val totalScores = allNextAttempts.map { it.totalScore() }
-                val currentMaxpScore = totalScores.max()
-                allNextAttempts.filter { it.maxPossibleScore(valves) >= currentMaxpScore }
             }
         }
-        // we need to walk over this valve grid and find an optimal path...
-        return paths.map { it.totalScore() }.max()
+
+        pathLengths.printSep(", ")
+
+        // now we have the lengths, let's find the best combination
+        // We always start at AA, so we can make all combinations of all other valve orders and calculate those
+        val valveRates = valvesWithRatesAndStartValueNames.map { valves[it]!!.flowRate }
+        return if (valveNameOrder == null) {
+            val valveIndexes = 1 until valvesWithRatesAndStartValve.size
+            println("Finding permutations for $valveIndexes")
+            val permutations = allPermutations(valveIndexes.toSet())
+            println("Amount of permutations: $permutations")
+            permutations.maxOfOrNull { calculateScore(it, valveRates, pathLengths) }!!
+        } else {
+            val indexes = valveNameOrder.map { valvesWithRatesAndStartValueNames.indexOf(it) }
+            println("Indexes are $indexes")
+            calculateScore(indexes, valveRates, pathLengths)
+        }
+    }
+
+    private fun calculateScore(
+        valveOrder: List<Int>,
+        valveRates: List<Int>,
+        pathLengths: MutableMatrix<Int>
+    ): Int {
+        var minutesLeft = 30
+        var valveIndex = 0
+        var score = 0
+        valveOrder.forEach { nextValveIndex ->
+            val pathLength = pathLengths.get(Point(valveIndex, nextValveIndex))
+            minutesLeft -= pathLength
+            if (minutesLeft <= 0) {
+                return score
+            }
+
+            minutesLeft -= 1
+            valveIndex = nextValveIndex
+            score += valveRates[valveIndex] * minutesLeft
+
+            if (minutesLeft <= 0) {
+                return score
+            }
+        }
+
+        return score
+    }
+
+    // https://stackoverflow.com/a/63532094
+    fun <T> allPermutations(set: Set<T>): Set<List<T>> {
+        if (set.isEmpty()) return emptySet()
+
+        fun <T> _allPermutations(list: List<T>): Set<List<T>> {
+            if (list.isEmpty()) return setOf(emptyList())
+
+            val result: MutableSet<List<T>> = mutableSetOf()
+            for (i in list.indices) {
+                _allPermutations(list - list[i]).forEach { item ->
+                    result.add(item + list[i])
+                }
+            }
+            return result
+        }
+
+        return _allPermutations(set.toList())
+    }
+
+    private fun findShortestLength(
+        valveNameFrom: String,
+        valveNameTo: String,
+        visited: List<String> = emptyList()
+    ): Int {
+        if (valveNameFrom == valveNameTo) {
+            return 0
+        }
+
+        val currentValve = valves[valveNameFrom]!!
+        // below check not needed because of first check above here
+        val nextValveNames = currentValve.next
+        if (nextValveNames.contains(valveNameTo)) {
+            return 1
+        }
+        // recursion...
+        return (nextValveNames
+            .filter { !visited.contains(it) }
+            .minOfOrNull { findShortestLength(it, valveNameTo, visited + valveNameFrom) } ?: 10000
+                ) + 1
     }
 }
 

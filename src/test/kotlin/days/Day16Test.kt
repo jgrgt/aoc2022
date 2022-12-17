@@ -15,9 +15,19 @@ Valve HH has flow rate=22; tunnel leads to valve GG
 Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II""".lines()
 
+    val exampleOrder = listOf("DD", "BB", "JJ", "HH", "EE", "CC")
+    val exampleOrderWithStart = listOf("AA", "DD", "BB", "JJ", "HH", "EE", "CC")
+
+
+    @Test
+    fun example1Aided() {
+        val actual = Game16(input).solve(exampleOrder)
+        assertEquals(1651, actual)
+    }
+
     @Test
     fun example1() {
-        val actual = Game16(input).solve()
+        val actual = Game16(input).solve(null)
         assertEquals(1651, actual)
     }
 }
