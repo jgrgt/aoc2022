@@ -85,17 +85,38 @@ class Game16(lines: List<String>) {
         // now we have the lengths, let's find the best combination
         // We always start at AA, so we can make all combinations of all other valve orders and calculate those
         val valveRates = valvesWithRatesAndStartValueNames.map { valves[it]!!.flowRate }
-        return if (valveNameOrder == null) {
-            val valveIndexes = 1 until valvesWithRatesAndStartValve.size
-            println("Finding permutations for $valveIndexes")
-            val permutations = allPermutations(valveIndexes.toSet())
-            println("Amount of permutations: $permutations")
-            permutations.maxOfOrNull { calculateScore(it, valveRates, pathLengths) }!!
-        } else {
-            val indexes = valveNameOrder.map { valvesWithRatesAndStartValueNames.indexOf(it) }
-            println("Indexes are $indexes")
-            calculateScore(indexes, valveRates, pathLengths)
+//        return if (valveNameOrder == null) {
+//            val valveIndexes = 1 until valvesWithRatesAndStartValve.size
+//            println("Finding permutations for $valveIndexes")
+//            val permutations = allPermutations(valveIndexes.toSet())
+//            println("Amount of permutations: $permutations")
+//            permutations.maxOfOrNull { calculateScore(it, valveRates, pathLengths) }!!
+//        } else {
+//            val indexes = valveNameOrder.map { valvesWithRatesAndStartValueNames.indexOf(it) }
+//            println("Indexes are $indexes")
+//            calculateScore(indexes, valveRates, pathLengths)
+//        }
+        return calculateBestScoreRecursive(path = listOf(0), valveRates, pathLengths, timeLeft = 30)
+    }
+
+    private fun calculateBestScoreRecursive(
+        path: List<Int>,
+        valveRates: List<Int>,
+        pathLengths: MutableMatrix<Int>,
+        timeLeft: Int
+    ): Int {
+        check(path.isNotEmpty())
+        if (timeLeft <= 0) {
+            return 0
         }
+        val currentValve = path.last()
+        val currentValveScore = timeLeft * valveRates[currentValve]
+        val candidates = pathLengths.items.indices.toSet().minus(path.toSet())
+        return currentValveScore + (candidates.maxOfOrNull { nextValve ->
+            val distance = pathLengths.get(Point(currentValve, nextValve))
+            val newTimeLeft = timeLeft - distance - 1 // 1 for opening the valve
+            calculateBestScoreRecursive(path + nextValve, valveRates, pathLengths, newTimeLeft)
+        } ?: 0)
     }
 
     private fun calculateScore(
