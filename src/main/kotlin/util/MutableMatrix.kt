@@ -3,6 +3,8 @@ package util
 import kotlin.math.max
 import kotlin.math.min
 
+// NOTE: this whole file has 'swapped' x/y compared to the AOC challenges. If you print the matrix, the
+// view will be transposed...
 data class MutableMatrix<T>(
     val items: MutableList<MutableList<T>>
 ) {
