@@ -17,17 +17,21 @@ Valve JJ has flow rate=21; tunnel leads to valve II""".lines()
 
     val exampleOrder = listOf("DD", "BB", "JJ", "HH", "EE", "CC")
     val exampleOrderWithStart = listOf("AA", "DD", "BB", "JJ", "HH", "EE", "CC")
+    val myOrder2 = listOf("JJ", "BB", "CC")
+    val elephantOrder = listOf("DD", "HH", "EE")
+    val myIndices2 = listOf(6, 1, 2)
+    val elephantIndices = listOf(3, 5, 4)
 
 
     @Test
-    fun example1Aided() {
-        val actual = Game16(input).solve(exampleOrder)
+    fun example1() {
+        val actual = Game16(input).solve()
         assertEquals(1651, actual)
     }
 
     @Test
-    fun example1() {
-        val actual = Game16(input).solve(null)
-        assertEquals(1651, actual)
+    fun example2() {
+        val actual = Game16(input).solve2()
+        assertEquals(1707, actual)
     }
 }

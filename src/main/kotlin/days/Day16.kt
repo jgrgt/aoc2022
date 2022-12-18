@@ -1,62 +1,25 @@
 package days
 
+import itertools.combinations
 import util.MutableMatrix
 import util.Point
 
 class Day16 : Day(16) {
 
     override fun partOne(): Any {
-        return Game16(inputList).solve(null)
+//        return Game16(inputList).solve()
+        return 0
     }
 
     override fun partTwo(): Any {
-        return "TODO"
-    }
-}
-
-data class ValveOpening(val time: Int, val rate: Int) {
-    val pressureRelease = (30 - time) * rate
-}
-
-data class D16Attempt(val clock: Int, val position: String, val openings: Map<String, ValveOpening>) {
-    fun goto(name: String): D16Attempt {
-        return D16Attempt(clock + 1, name, openings)
-    }
-
-    fun currentValveIsOpen(): Boolean {
-        return openings.containsKey(position)
-    }
-
-    fun open(valves: Map<String, Day16Valve>): D16Attempt {
-        val rate = valves[position]!!.flowRate
-        val newClock = clock + 1
-        return D16Attempt(newClock, position, openings + (position to ValveOpening(newClock, rate)))
-    }
-
-    fun totalScore(): Int {
-        return openings.values.sumOf { it.pressureRelease }
-    }
-
-    fun maxPossibleScore(valves: Map<String, Day16Valve>): Int {
-        return totalScore() + unOpenedValveOpenings(valves)
-    }
-
-    private fun unOpenedValveOpenings(valves: Map<String, Day16Valve>): Int {
-        val minutesLeft = 30 - clock - 1 // next minute onwards
-        val maxOpenings = minutesLeft / 2 // you need to move between openings
-        val allValveNames = valves.keys
-        val openedValveNames = openings.keys
-        val closedValveNames = allValveNames.subtract(openedValveNames)
-        val closedRates =
-            valves.filter { closedValveNames.contains(it.key) }.values.map { it.flowRate }.sortedDescending()
-        return closedRates.take(maxOpenings).zip((maxOpenings downTo 1)).sumOf { (rate, time) -> rate * (time * 2) }
+        return Game16(inputList).solve2()
     }
 }
 
 class Game16(lines: List<String>) {
     val valves = lines.map { Day16Valve.from(it) }.associateBy { it.name }
 
-    fun solve(valveNameOrder: List<String>?): Int {
+    fun solve(): Int {
         // Plan: first figure out the most efficient ways to go from 1 (useful) valve to another.
         // Then use that to iterate all efficient possibilities and find the best one
 
@@ -83,21 +46,30 @@ class Game16(lines: List<String>) {
         pathLengths.printSep(", ")
 
         // now we have the lengths, let's find the best combination
-        // We always start at AA, so we can make all combinations of all other valve orders and calculate those
         val valveRates = valvesWithRatesAndStartValueNames.map { valves[it]!!.flowRate }
-//        return if (valveNameOrder == null) {
-//            val valveIndexes = 1 until valvesWithRatesAndStartValve.size
-//            println("Finding permutations for $valveIndexes")
-//            val permutations = allPermutations(valveIndexes.toSet())
-//            println("Amount of permutations: $permutations")
-//            permutations.maxOfOrNull { calculateScore(it, valveRates, pathLengths) }!!
-//        } else {
-//            val indexes = valveNameOrder.map { valvesWithRatesAndStartValueNames.indexOf(it) }
-//            println("Indexes are $indexes")
-//            calculateScore(indexes, valveRates, pathLengths)
-//        }
-        return calculateBestScoreRecursive(path = listOf(0), valveRates, pathLengths, timeLeft = 30)
+//        val nonZeroValveNames = valves.filter { it.value.flowRate > 0 }
+//        val valveNameSplits = generateSplits(nonZeroValveNames)
+        val size = valvesWithRatesAndStartValueNames.size
+        val actualValveIndices = (1..size).toList()
+        return (1 until size)
+            .flatMap { actualValveIndices.combinations(it) }
+            .map { myValveIndices ->
+                val elephantValveIndices = actualValveIndices.minus(myValveIndices.toSet())
+                // hacky way to make sure
+                val myScore =
+                    calculateBestScoreRecursive(path = elephantValveIndices + 0, valveRates, pathLengths, timeLeft = 30)
+                val elephantScore =
+                    calculateBestScoreRecursive(path = myValveIndices + 0, valveRates, pathLengths, timeLeft = 30)
+                myScore + elephantScore
+            }.min()
     }
+//
+//    private fun generateSplits(valves: Map<String, Day16Valve>): List<List<String>> {
+//        val originalSet = valves.keys
+//        return (1 until valves.size).toList().flatMap {
+//            originalSet.combinations(it).toList()
+//        }
+//    }
 
     private fun calculateBestScoreRecursive(
         path: List<Int>,
@@ -117,52 +89,6 @@ class Game16(lines: List<String>) {
             val newTimeLeft = timeLeft - distance - 1 // 1 for opening the valve
             calculateBestScoreRecursive(path + nextValve, valveRates, pathLengths, newTimeLeft)
         } ?: 0)
-    }
-
-    private fun calculateScore(
-        valveOrder: List<Int>,
-        valveRates: List<Int>,
-        pathLengths: MutableMatrix<Int>
-    ): Int {
-        var minutesLeft = 30
-        var valveIndex = 0
-        var score = 0
-        valveOrder.forEach { nextValveIndex ->
-            val pathLength = pathLengths.get(Point(valveIndex, nextValveIndex))
-            minutesLeft -= pathLength
-            if (minutesLeft <= 0) {
-                return score
-            }
-
-            minutesLeft -= 1
-            valveIndex = nextValveIndex
-            score += valveRates[valveIndex] * minutesLeft
-
-            if (minutesLeft <= 0) {
-                return score
-            }
-        }
-
-        return score
-    }
-
-    // https://stackoverflow.com/a/63532094
-    fun <T> allPermutations(set: Set<T>): Set<List<T>> {
-        if (set.isEmpty()) return emptySet()
-
-        fun <T> _allPermutations(list: List<T>): Set<List<T>> {
-            if (list.isEmpty()) return setOf(emptyList())
-
-            val result: MutableSet<List<T>> = mutableSetOf()
-            for (i in list.indices) {
-                _allPermutations(list - list[i]).forEach { item ->
-                    result.add(item + list[i])
-                }
-            }
-            return result
-        }
-
-        return _allPermutations(set.toList())
     }
 
     private fun findShortestLength(
@@ -185,6 +111,56 @@ class Game16(lines: List<String>) {
             .filter { !visited.contains(it) }
             .minOfOrNull { findShortestLength(it, valveNameTo, visited + valveNameFrom) } ?: 10000
                 ) + 1
+    }
+
+    fun solve2(): Int {
+        // Plan: first figure out the most efficient ways to go from 1 (useful) valve to another.
+        // Then use that to iterate all efficient possibilities and find the best one
+
+        // First part: pathfinding, depth first, no loops
+        val valvesWithRatesAndStartValve = valves.filter { it.value.flowRate > 0 || it.key == "AA" }
+        val valvesWithRatesAndStartValueNames =
+            valvesWithRatesAndStartValve.keys.toList().sorted() // sorted because easier for me
+        val pathLengths = MutableMatrix.from(valvesWithRatesAndStartValve.size, valvesWithRatesAndStartValve.size) { 0 }
+        // iterate all combinations
+        valvesWithRatesAndStartValueNames.forEachIndexed { indexFrom, valveNameFrom ->
+            valvesWithRatesAndStartValueNames.forEachIndexed { indexTo, valveNameTo ->
+                if (indexFrom < indexTo) {
+                    check(valveNameFrom != valveNameTo)
+                    val p = Point(indexFrom, indexTo)
+                    val current = pathLengths.get(p)
+                    check(current == 0)
+                    val length = findShortestLength(valveNameFrom, valveNameTo)
+                    pathLengths.set(p, length)
+                    pathLengths.set(Point(indexTo, indexFrom), length)
+                }
+            }
+        }
+
+        pathLengths.printSep(", ")
+
+        // now we have the lengths, let's find the best combination
+        val valveRates = valvesWithRatesAndStartValueNames.map { valves[it]!!.flowRate }
+//        val nonZeroValveNames = valves.filter { it.value.flowRate > 0 }
+//        val valveNameSplits = generateSplits(nonZeroValveNames)
+        val size = valvesWithRatesAndStartValueNames.size
+        val actualValveIndices = (1 until size).toList()
+        val m = (1 until size)
+            .flatMap { actualValveIndices.combinations(it) }
+//        println((valvesWithRatesAndStartValueNames.mapIndexed { i, name -> "$i: $name" }).joinToString(", "))
+//        val m = listOf(listOf(1, 2, 6))
+            .map { myValveIndices ->
+                val elephantValveIndices = actualValveIndices.minus(myValveIndices.toSet())
+                // hacky way to make sure
+                val myScore =
+                    calculateBestScoreRecursive(path = elephantValveIndices + 0, valveRates, pathLengths, timeLeft = 26)
+                val elephantScore =
+                    calculateBestScoreRecursive(path = myValveIndices + 0, valveRates, pathLengths, timeLeft = 26)
+                (myScore + elephantScore) to myValveIndices
+            }.maxBy { it.first }
+
+        println("Score ${m.first}: ${m.second.map { valvesWithRatesAndStartValueNames[it] }}")
+        return m.first
     }
 }
 
