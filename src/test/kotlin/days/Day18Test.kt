@@ -23,4 +23,10 @@ class Day18Test {
         val actual = Day18Game(example).solve()
         assertEquals(64, actual)
     }
+
+    @Test
+    fun examplePart2() {
+        val actual = Day18Game2(example).solve()
+        assertEquals(58, actual)
+    }
 }
